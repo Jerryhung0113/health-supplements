@@ -222,8 +222,8 @@ body {
    ========================================================================== */
 .stat-dashboard {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 .stat-card {
@@ -231,32 +231,32 @@ body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: var(--shadow-md);
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .stat-icon i {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 }
 
 .icon-blue { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; }
@@ -270,13 +270,13 @@ body {
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   font-family: 'Outfit', sans-serif;
   line-height: 1.2;
@@ -403,6 +403,9 @@ body {
    Table Design (Spreadsheet View)
    ========================================================================== */
 .table-wrapper {
+  max-height: calc(100vh - 270px);
+  min-height: 350px;
+  overflow-y: auto;
   overflow-x: auto;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
@@ -428,6 +431,9 @@ body {
 .inventory-table th:nth-child(8), .inventory-table td:nth-child(8) { width: auto; min-width: 260px; } /* 備註 */
 
 .inventory-table th {
+  position: sticky;
+  top: 0;
+  z-index: 90;
   background-color: var(--border-color);
   color: var(--text-color);
   font-weight: 600;
