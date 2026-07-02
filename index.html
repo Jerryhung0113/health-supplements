@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保健食品庫存管理系統</title>
+  <!-- Google Fonts: Outfit (modern english/numbers) & Noto Sans TC (clean traditional chinese) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons for premium look -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css?v=1.4">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <div class="logo-icon">
+          <i data-lucide="pill"></i>
+        </div>
+        <div class="logo-text">
+          <h1>保健食品庫存管理</h1>
+          <p>Supplement Inventory System</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <!-- Search & Filter -->
+        <div class="search-box">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="searchInput" placeholder="搜尋補給品名稱、品牌、規格或備註...">
+          <button id="clearSearch" class="btn-clear" style="display: none;">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="theme-toggle" id="themeToggle" title="切換深淺色主題">
+          <i data-lucide="moon" class="dark-icon"></i>
+          <i data-lucide="sun" class="light-icon" style="display: none;"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stat Dashboard Cards -->
+    <section class="stat-dashboard">
+      <div class="stat-card">
+        <div class="stat-icon icon-blue">
+          <i data-lucide="package"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">補給品總類</span>
+          <h2 id="statTotalItems" class="stat-value">0</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon icon-purple">
+          <i data-lucide="archive"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">總瓶數</span>
+          <h2 id="statTotalBottles" class="stat-value">0</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon icon-green">
+          <i data-lucide="sparkles"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">全新瓶數</span>
+          <h2 id="statNewCount" class="stat-value">0</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon icon-orange">
+          <i data-lucide="unlock"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">已開瓶數</span>
+          <h2 id="statOpenedCount" class="stat-value">0</h2>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar -->
+    <section class="toolbar">
+      <div class="toolbar-left">
+        <div class="view-switchers">
+          <button id="viewTableBtn" class="btn-view active" title="表格檢視">
+            <i data-lucide="table-2"></i>
+            <span>表格檢視</span>
+          </button>
+          <button id="viewGridBtn" class="btn-view" title="卡片檢視">
+            <i data-lucide="layout-grid"></i>
+            <span>卡片檢視</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <!-- Save Status indicator -->
+        <div class="save-status" id="saveStatus">
+          <i data-lucide="check-circle" class="saved-icon"></i>
+          <i data-lucide="loader" class="saving-icon spin" style="display: none;"></i>
+          <span id="saveStatusText">資料已儲存</span>
+        </div>
+
+        <button id="addItemBtn" class="btn btn-primary">
+          <i data-lucide="plus-circle"></i>
+          <span>新增品項</span>
+        </button>
+        <button id="cloudSettingsBtn" class="btn btn-secondary">
+          <i data-lucide="cloud"></i>
+          <span>雲端設定</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Content Container -->
+    <main class="content-container">
+      
+      <!-- Table View -->
+      <div id="tableView" class="view-container table-wrapper">
+        <table class="inventory-table">
+          <thead>
+            <tr>
+              <th width="60" class="text-center">序號</th>
+              <th width="80" class="text-center">圖片</th>
+              <th id="th-name" class="sortable-header" onclick="handleHeaderClick('name')" title="點擊依名稱排序">
+                名稱 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              </th>
+              <th id="th-spec" class="sortable-header" onclick="handleHeaderClick('spec')" title="點擊依規格排序">
+                品牌與規格 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              </th>
+              <th id="th-newCount" class="sortable-header text-center" width="80" onclick="handleHeaderClick('newCount')" title="點擊依全新數量排序">
+                全新 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              </th>
+              <th id="th-openedCount" class="sortable-header text-center" width="80" onclick="handleHeaderClick('openedCount')" title="點擊依已開數量排序">
+                已開 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              </th>
+              <th id="th-totalBottles" class="sortable-header text-center" width="90" onclick="handleHeaderClick('totalBottles')" title="點擊依總瓶數排序">
+                總瓶數 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              </th>
+              <th>備註</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Dynamic content populated by JS -->
+            <tr>
+              <td colspan="8" class="td-loading">
+                <div class="spinner-container">
+                  <i data-lucide="loader" class="spin"></i>
+                  <span>載入圖片中，請稍候...</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Grid View -->
+      <div id="gridView" class="view-container grid-wrapper" style="display: none;">
+        <div id="cardGrid" class="card-grid">
+          <!-- Dynamic cards populated by JS -->
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <i data-lucide="folder-open"></i>
+        <h3>未發現任何圖片</h3>
+        <p>請將您的 `.jpg` 格式照片放置在此資料夾內，然後重新整理網頁。</p>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer-bar">
+      <p>© 2026 保健食品庫存管理系統 | 本地資料直接與 <code>data.json</code> 進行即時同步</p>
+    </footer>
+  </div>
+
+  <!-- Lightbox Modal -->
+  <div id="lightbox" class="lightbox-modal" style="display: none;">
+    <span class="lightbox-close" id="lightboxClose">&times;</span>
+    <button class="lightbox-nav prev" id="lightboxPrev" title="上一張"><i data-lucide="chevron-left"></i></button>
+    
+    <div class="lightbox-content">
+      <img id="lightboxImg" src="" alt="放大圖片">
+      <div class="lightbox-caption" id="lightboxCaption">圖片檔名</div>
+    </div>
+    
+    <button class="lightbox-nav next" id="lightboxNext" title="下一張"><i data-lucide="chevron-right"></i></button>
+    <div class="lightbox-toolbar">
+      <button onclick="rotateImage(-90)" title="逆時針旋轉"><i data-lucide="rotate-ccw"></i></button>
+      <button onclick="rotateImage(90)" title="順時針旋轉"><i data-lucide="rotate-cw"></i></button>
+      <button onclick="zoomImage(0.2)" title="放大"><i data-lucide="zoom-in"></i></button>
+      <button onclick="zoomImage(-0.2)" title="縮小"><i data-lucide="zoom-out"></i></button>
+      <button onclick="resetImageTransform()" title="重設"><i data-lucide="refresh-cw"></i></button>
+    </div>
+  </div>
+
+  <!-- Cloud Settings Modal -->
+  <div id="cloudSettingsModal" class="lightbox-modal" style="display: none;">
+    <span class="lightbox-close" id="closeCloudSettingsBtn">&times;</span>
+    <div class="card-content" style="background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border); border-radius: var(--radius-lg); width: 90%; max-width: 500px; padding: 24px; box-shadow: var(--shadow-xl);">
+      <h2 style="margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="cloud" style="color:var(--accent-color);"></i>
+        <span>Google 試算表雲端設定</span>
+      </h2>
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
+        將此系統連接至您的 Google 試算表，實現多人即時同步讀寫資料！請在下方貼上您部署的「Google 網頁應用程式 URL」。
+      </p>
+      
+      <div class="card-input-group" style="margin-bottom: 20px;">
+        <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Google Apps Script 網址 (Web App URL)</label>
+        <input type="text" id="googleUrlInput" class="card-input" style="padding: 10px 14px; font-size: 13px; margin-top: 4px;" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button id="testCloudConnectionBtn" class="btn btn-secondary">
+          <i data-lucide="refresh-cw"></i>
+          <span>測試連線</span>
+        </button>
+        <button id="saveCloudSettingsBtn" class="btn btn-primary">
+          <i data-lucide="check"></i>
+          <span>儲存並啟用</span>
+        </button>
+      </div>
+      <div id="cloudConnectionMsg" style="margin-top: 14px; font-size: 12px; font-weight: 500; text-align: center;"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=1.4"></script>
+</body>
+</html>
