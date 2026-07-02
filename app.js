@@ -15,6 +15,10 @@ let imgScale = 1;
 let sortColumn = '';
 let sortDirection = 'asc';
 let initialLoad = true;
+// Snapshot of the last successfully saved data (JSON string).
+// Autosave is skipped if current data matches this snapshot.
+let lastSavedSnapshot = null;
+
 
 // Google Sheets Cloud sync URL (saved in localStorage or set here directly)
 let googleScriptUrl = localStorage.getItem('google_script_url') || 'https://script.google.com/macros/s/AKfycbw5H-MlMtpzw04ahKptEXQR-sOAhAdPlnZCbFo9f6avefk3YUR_TYs5wHGSWGEINFcejA/exec';
@@ -143,6 +147,11 @@ async function loadData() {
         }
         standaloneMode = true;
         console.log('Successfully loaded data from Google Sheets. Count:', inventoryData.length);
+        // Deduplicate rows that may have accumulated from previous bugs
+        inventoryData = deduplicateData(inventoryData);
+        console.log('After dedup count:', inventoryData.length);
+        // Record snapshot: any data that looks exactly like this does NOT need re-saving
+        lastSavedSnapshot = JSON.stringify(inventoryData.map(stripId));
         applyFilters();
         initialLoad = false;
         return;
@@ -157,6 +166,11 @@ async function loadData() {
         }
         standaloneMode = true;
         console.log('Successfully loaded data from Google Sheets API. Count:', inventoryData.length);
+        // Deduplicate rows that may have accumulated from previous bugs
+        inventoryData = deduplicateData(inventoryData);
+        console.log('After dedup count:', inventoryData.length);
+        // Record snapshot so unchanged data is never re-saved
+        lastSavedSnapshot = JSON.stringify(inventoryData.map(stripId));
         applyFilters();
         initialLoad = false;
         return;
@@ -225,6 +239,31 @@ function mapData(array) {
 function loadDataFromLocalStorage() {
   // For safety we no longer read any cached data. If the cloud fails we start with an empty table.
   inventoryData = [];
+}
+
+// Remove duplicate rows coming from Google Sheets.
+// Two rows are considered duplicates if they have the same name+spec+image.
+function deduplicateData(arr) {
+  const seen = new Set();
+  return arr.filter(item => {
+    // Build a key: for base64 images use first 100 chars (enough to distinguish)
+    const imgKey = item.image && item.image.startsWith('data:')
+      ? item.image.substring(0, 100)
+      : (item.image || '');
+    const key = `${item.name}||${item.spec}||${imgKey}`;
+    if (seen.has(key)) {
+      console.warn('Dedup: removed duplicate row:', item.name);
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+// Strip internal _id field before comparing or sending to server
+function stripId(item) {
+  const { _id, ...rest } = item;
+  return rest;
 }
 
 
@@ -615,6 +654,14 @@ function triggerAutosave() {
     console.log('Autosave skipped: initial data loading.');
     return;
   }
+
+  // Skip save if data has not changed since last successful save
+  const currentSnapshot = JSON.stringify(inventoryData.map(stripId));
+  if (currentSnapshot === lastSavedSnapshot) {
+    console.log('Autosave skipped: data unchanged since last save.');
+    return;
+  }
+
   setSaveStatus('saving');
   if (saveTimeout) clearTimeout(saveTimeout);
   
@@ -622,16 +669,19 @@ function triggerAutosave() {
     try {
       // 1. If Google Script URL is configured, push to Google Sheets
       if (googleScriptUrl) {
+        const dataToSend = inventoryData.map(stripId); // Never send internal _id to server
         const response = await fetch(googleScriptUrl, {
           method: 'POST',
           mode: 'cors',
           headers: {
             'Content-Type': 'text/plain;charset=utf-8' // avoids preflight OPTIONS CORS block
           },
-          body: JSON.stringify(inventoryData)
+          body: JSON.stringify(dataToSend)
         });
         const res = await response.json();
         if (res && res.success) {
+          // Update snapshot so we don't re-save the same data again
+          lastSavedSnapshot = JSON.stringify(dataToSend);
           setSaveStatus('saved', '雲端同步成功');
         } else {
           throw new Error((res && res.error) || 'Google Sheet save failed');
@@ -662,8 +712,6 @@ function triggerAutosave() {
       console.error('Error saving data:', e);
       setSaveStatus('error', '儲存失敗');
       // IMPORTANT: Only fall back to localStorage when NOT using Google Sheets.
-      // If Google Sheets is configured, localStorage must NOT be written to,
-      // because stale localStorage data will conflict with cloud data on next load.
       if (!googleScriptUrl) {
         localStorage.setItem('supplement_inventory_data', JSON.stringify(inventoryData));
       }
