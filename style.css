@@ -1260,8 +1260,5 @@ body {
   opacity: 0.8;
 }
 
-/* Ensure table header is positioned relative so resizers align correctly */
-.inventory-table th {
-  position: relative;
-}
+
 
