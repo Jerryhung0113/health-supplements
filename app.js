@@ -4,6 +4,7 @@
 
 // Global state
 let inventoryData = [];
+let _nextId = 1; // Unique ID counter for each item
 let filteredData = [];
 let currentView = 'table'; // 'table' or 'grid'
 let standaloneMode = false;
@@ -120,6 +121,8 @@ function updateThemeIcons(theme) {
 
 // Fetch inventory data
 async function loadData() {
+  // Reset the guard so autosave is blocked during this load
+  initialLoad = true;
   showLoading();
   
   // 1. Try to load from Google Sheets if configured
@@ -131,29 +134,29 @@ async function loadData() {
       
       if (result && Array.isArray(result)) {
         if (result.length === 0) {
-          console.log('Google Sheets is empty. Initializing with local data...');
-          loadDataFromLocalStorage();
+          console.log('Google Sheets is empty. Starting with empty table.');
+          inventoryData = [];
         } else {
           inventoryData = mapData(result);
           // Clear stale localStorage so it never conflicts with cloud data
           localStorage.removeItem('supplement_inventory_data');
         }
         standaloneMode = true;
-        console.log('Successfully loaded data from Google Sheets.');
+        console.log('Successfully loaded data from Google Sheets. Count:', inventoryData.length);
         applyFilters();
         initialLoad = false;
         return;
       } else if (result && result.success && Array.isArray(result.data)) {
         if (result.data.length === 0) {
-          console.log('Google Sheets is empty. Initializing with local data...');
-          loadDataFromLocalStorage();
+          console.log('Google Sheets is empty. Starting with empty table.');
+          inventoryData = [];
         } else {
           inventoryData = mapData(result.data);
           // Clear stale localStorage so it never conflicts with cloud data
           localStorage.removeItem('supplement_inventory_data');
         }
         standaloneMode = true;
-        console.log('Successfully loaded data from Google Sheets API.');
+        console.log('Successfully loaded data from Google Sheets API. Count:', inventoryData.length);
         applyFilters();
         initialLoad = false;
         return;
@@ -172,28 +175,32 @@ async function loadData() {
       inventoryData = mapData(result.data);
       standaloneMode = false;
       console.log('Successfully connected to local server API.');
+      applyFilters();
+      initialLoad = false;
+      return;
     } else {
       throw new Error('No data returned or server mode inactive');
     }
   } catch (error) {
     console.warn('Cannot fetch from local server API. Trying to load static data.json...', error);
-    // 3. Try to load static data.json file
-    try {
-      const staticResponse = await fetch('data.json');
-      const staticData = await staticResponse.json();
-      if (Array.isArray(staticData) && staticData.length > 0) {
-        inventoryData = mapData(staticData);
-        standaloneMode = true;
-        console.log('Successfully loaded static data.json file.');
-      } else {
-        throw new Error('Static data.json is empty or invalid');
-      }
-    } catch (staticError) {
-      // 4. Fall back to LocalStorage
-      console.warn('Cannot load static data.json either. Falling back to LocalStorage.', staticError);
+  }
+  
+  // 3. Try to load static data.json file
+  try {
+    const staticResponse = await fetch('data.json');
+    const staticData = await staticResponse.json();
+    if (Array.isArray(staticData) && staticData.length > 0) {
+      inventoryData = mapData(staticData);
       standaloneMode = true;
-      loadDataFromLocalStorage();
+      console.log('Successfully loaded static data.json file.');
+    } else {
+      throw new Error('Static data.json is empty or invalid');
     }
+  } catch (staticError) {
+    // 4. Fall back to empty table
+    console.warn('Cannot load static data.json either. Starting with empty table.', staticError);
+    standaloneMode = true;
+    inventoryData = [];
   }
   
   applyFilters();
@@ -201,8 +208,10 @@ async function loadData() {
 }
 
 // Map database fields to standard schema safely
+// Each item gets a unique _id so that findIndex never mixes up items with the same image
 function mapData(array) {
   return array.map(item => ({
+    _id: item._id || (_nextId++),
     image: item.image || 'https://placehold.co/150?text=No+Image',
     name: item.name !== undefined ? item.name : (item.nameA || ''),
     spec: item.spec !== undefined ? item.spec : (item.specA || ''),
@@ -280,8 +289,8 @@ function renderTable() {
   tableBody.innerHTML = '';
   
   filteredData.forEach((item, idx) => {
-    // Find original index in source array
-    const originalIndex = inventoryData.findIndex(orig => orig.image === item.image);
+    // Find original index in source array using unique _id to avoid image collision
+    const originalIndex = inventoryData.findIndex(orig => orig._id === item._id);
     
     const tr = document.createElement('tr');
     
@@ -394,7 +403,7 @@ function renderGrid() {
   cardGrid.innerHTML = '';
   
   filteredData.forEach((item) => {
-    const originalIndex = inventoryData.findIndex(orig => orig.image === item.image);
+    const originalIndex = inventoryData.findIndex(orig => orig._id === item._id);
     
     const card = document.createElement('div');
     card.className = 'inventory-card';
@@ -952,6 +961,7 @@ function setupEventListeners() {
   if (addItemBtn) {
     addItemBtn.addEventListener('click', () => {
       inventoryData.push({
+        _id: _nextId++, // Unique ID prevents index collision
         image: 'https://placehold.co/150?text=No+Image', // Default placeholder
         name: '',
         spec: '',
