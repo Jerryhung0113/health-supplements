@@ -1136,7 +1136,6 @@ function initResizableColumns() {
     // Create resizer element
     const resizer = document.createElement('div');
     resizer.className = 'col-resizer';
-    col.style.position = 'relative';
     col.appendChild(resizer);
     
     let startX, startWidth;
