@@ -30,9 +30,9 @@ function doPost(e) {
           item.image || '',
           item.name || '',
           item.spec || '',
-          item.totalBottles || '',
-          item.newCount || '',
-          item.openedCount || '',
+          item.openedCount || '',  // Column D: 已開
+          item.newCount || '',     // Column E: 全新
+          item.totalBottles || '', // Column F: 總瓶數
           item.remarks || ''
         ]);
       }
@@ -42,9 +42,9 @@ function doPost(e) {
         payload.image || '',
         payload.name || '',
         payload.spec || '',
-        payload.totalBottles || '',
-        payload.newCount || '',
-        payload.openedCount || '',
+        payload.openedCount || '',  // Column D: 已開
+        payload.newCount || '',     // Column E: 全新
+        payload.totalBottles || '', // Column F: 總瓶數
         payload.remarks || ''
       ]);
     }
@@ -78,9 +78,9 @@ function doGet(e) {
         image: row[0],
         name: row[1],
         spec: row[2],
-        totalBottles: row[3],
-        newCount: row[4],
-        openedCount: row[5],
+        openedCount: row[3], // Column D: 已開
+        newCount: row[4],    // Column E: 全新
+        totalBottles: row[5], // Column F: 總瓶數
         remarks: row[6]
       });
     }
