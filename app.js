@@ -224,8 +224,9 @@ async function loadData() {
 // Map database fields to standard schema safely
 // Each item gets a unique _id so that findIndex never mixes up items with the same image
 function mapData(array) {
-  return array.map(item => ({
+  return array.map((item, idx) => ({
     _id: item._id || (_nextId++),
+    no: item.no !== undefined && item.no !== '' ? parseInt(item.no) : (idx + 1),
     isDraft: false,
     image: item.image || 'https://placehold.co/150?text=No+Image',
     name: item.name !== undefined ? item.name : (item.nameA || ''),
@@ -325,7 +326,6 @@ function render() {
   }
 }
 
-// Render dynamic table rows
 function renderTable() {
   tableBody.innerHTML = '';
   
@@ -335,8 +335,8 @@ function renderTable() {
     
     const tr = document.createElement('tr');
     
-    // Set row to be draggable
-    tr.draggable = true;
+    // Set row to be draggable dynamically only when hovering over the handle cell
+    tr.draggable = false;
     
     tr.addEventListener('dragstart', (e) => {
       if (sortColumn) {
@@ -375,6 +375,11 @@ function renderTable() {
         inventoryData.splice(sourceIndex, 1);
         inventoryData.splice(targetIndex, 0, movedItem);
         
+        // Re-index all items so Nos. stay sequential and gap-free
+        inventoryData.forEach((item, idx) => {
+          item.no = idx + 1;
+        });
+        
         applyFilters();
       }
     });
@@ -391,7 +396,7 @@ function renderTable() {
       <td class="text-center drag-handle-cell">
         <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
           <i data-lucide="grip-vertical" style="color: var(--text-secondary); width: 14px; height: 14px; cursor: grab;"></i>
-          <span style="font-weight: 600; color: var(--text-secondary); min-width: 14px;">${idx + 1}</span>
+          <span style="font-weight: 600; color: var(--text-secondary); min-width: 14px;">${item.no}</span>
           <button class="btn-row-delete" onclick="deleteRow(${originalIndex})" title="刪除此品項" style="padding: 2px;">
             <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
           </button>
@@ -431,6 +436,17 @@ function renderTable() {
         <input type="text" class="table-input" value="${escapeHtml(item.remarks)}" placeholder="有效期限/購買地點/備註..." oninput="updateField(${originalIndex}, 'remarks', this.value)">
       </td>
     `;
+    
+    // Bind mouseenter and mouseleave to first cell to enable dragging only via the handle
+    const handleEl = tr.querySelector('.drag-handle-cell');
+    if (handleEl) {
+      handleEl.addEventListener('mouseenter', () => {
+        tr.draggable = true;
+      });
+      handleEl.addEventListener('mouseleave', () => {
+        tr.draggable = false;
+      });
+    }
     
     tableBody.appendChild(tr);
   });
@@ -606,6 +622,10 @@ function updateField(index, field, value, el) {
 function deleteRow(index) {
   if (confirm('確定要刪除此品項嗎？')) {
     inventoryData.splice(index, 1);
+    // Re-index remaining items so Nos. stay sequential
+    inventoryData.forEach((item, idx) => {
+      item.no = idx + 1;
+    });
     applyFilters();
   }
 }
@@ -771,8 +791,8 @@ function applyFilters() {
       let valA = a[sortColumn] || '';
       let valB = b[sortColumn] || '';
       
-      // Handle numeric sorting for quantity columns
-      if (['newCount', 'openedCount', 'totalBottles'].includes(sortColumn)) {
+      // Handle numeric sorting for quantity/No columns
+      if (['no', 'newCount', 'openedCount', 'homeCount', 'totalBottles'].includes(sortColumn)) {
         valA = parseInt(valA) || 0;
         valB = parseInt(valB) || 0;
         if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
@@ -805,7 +825,7 @@ window.handleHeaderClick = function(column) {
 };
 
 function updateHeaderSortIcons() {
-  const columns = ['name', 'spec', 'newCount', 'openedCount', 'totalBottles'];
+  const columns = ['no', 'name', 'spec', 'newCount', 'openedCount', 'homeCount', 'totalBottles'];
   columns.forEach(col => {
     const th = document.getElementById(`th-${col}`);
     if (!th) return;
@@ -991,6 +1011,24 @@ function getFormattedDate() {
 // Setup Listeners
 // ==========================================================================
 function setupEventListeners() {
+  const tableView = document.getElementById('tableView');
+  if (tableView) {
+    tableView.addEventListener('dragover', (e) => {
+      const rect = tableView.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+      const relativeBottom = rect.bottom - e.clientY;
+      const threshold = 60;
+      
+      if (relativeY < threshold && relativeY > 0) {
+        const speed = Math.max(2, (threshold - relativeY) * 0.4);
+        tableView.scrollTop -= speed;
+      } else if (relativeBottom < threshold && relativeBottom > 0) {
+        const speed = Math.max(2, (threshold - relativeBottom) * 0.4);
+        tableView.scrollTop += speed;
+      }
+    });
+  }
+
   searchInput.addEventListener('input', applyFilters);
   clearSearchBtn.addEventListener('click', () => {
     searchInput.value = '';
@@ -1018,6 +1056,7 @@ function setupEventListeners() {
     addItemBtn.addEventListener('click', () => {
       inventoryData.push({
         _id: _nextId++, // Unique ID prevents index collision
+        no: inventoryData.length + 1, // Fixed No.
         image: 'https://placehold.co/150?text=No+Image', // Default placeholder
         name: '',
         spec: '',
