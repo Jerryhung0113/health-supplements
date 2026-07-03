@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Lucide Icons for premium look -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="style.css?v=2.3">
+  <link rel="stylesheet" href="style.css?v=2.4">
 </head>
 <body>
   <div class="app-container">
@@ -142,7 +142,9 @@
         <table class="inventory-table">
           <thead>
             <tr>
-              <th width="60" class="text-center">序號</th>
+              <th id="th-no" class="sortable-header text-center" width="60" onclick="handleHeaderClick('no')" title="點擊依序號排序">
+                序號 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              </th>
               <th width="80" class="text-center">圖片</th>
               <th id="th-name" class="sortable-header" onclick="handleHeaderClick('name')" title="點擊依名稱排序">
                 名稱 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
@@ -249,6 +251,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=2.3"></script>
+  <script src="app.js?v=2.4"></script>
 </body>
 </html>
