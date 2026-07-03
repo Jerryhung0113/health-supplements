@@ -233,6 +233,7 @@ function mapData(array) {
     totalBottles: item.totalBottles || '',
     newCount: item.newCount || '',
     openedCount: item.openedCount || '',
+    homeCount: item.homeCount || '',
     remarks: item.remarks || ''
   }));
 }
@@ -415,10 +416,13 @@ function renderTable() {
         <input type="text" class="table-input" value="${escapeHtml(item.spec)}" placeholder="品牌/規格/容量..." oninput="updateField(${originalIndex}, 'spec', this.value)">
       </td>
       <td>
+        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+      </td>
+      <td>
         <input type="number" class="table-input num-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
       </td>
       <td>
-        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+        <input type="number" class="table-input num-input" value="${item.homeCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'homeCount', this.value, this)">
       </td>
       <td>
         <input type="number" class="table-input num-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
@@ -489,12 +493,16 @@ function renderGrid() {
           <div class="card-section-title">庫存數量</div>
           <div class="card-qty-row">
             <div class="card-qty-item">
+              <span>全新</span>
+              <input type="number" class="card-qty-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+            </div>
+            <div class="card-qty-item">
               <span>已開</span>
               <input type="number" class="card-qty-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
             </div>
             <div class="card-qty-item">
-              <span>全新</span>
-              <input type="number" class="card-qty-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+              <span>家裡</span>
+              <input type="number" class="card-qty-input" value="${item.homeCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'homeCount', this.value, this)">
             </div>
             <div class="card-qty-item">
               <span>總瓶數</span>
@@ -526,20 +534,28 @@ function updateStatistics() {
   let totalB = 0;
   let newB = 0;
   let openedB = 0;
+  let homeB = 0;
   
   inventoryData.forEach(item => {
     const total = parseInt(item.totalBottles) || 0;
     const nw = parseInt(item.newCount) || 0;
     const op = parseInt(item.openedCount) || 0;
+    const hm = parseInt(item.homeCount) || 0;
     
     totalB += total;
     newB += nw;
     openedB += op;
+    homeB += hm;
   });
   
   statTotalBottles.innerText = totalB;
   statNewCount.innerText = newB;
   statOpenedCount.innerText = openedB;
+  
+  const statHomeCount = document.getElementById('statHomeCount');
+  if (statHomeCount) {
+    statHomeCount.innerText = homeB;
+  }
 }
 
 // Helper to escape HTML tags
@@ -559,12 +575,13 @@ function escapeHtml(string) {
 function updateField(index, field, value, el) {
   inventoryData[index][field] = value;
   
-  if (field === 'newCount' || field === 'openedCount') {
+  if (field === 'newCount' || field === 'openedCount' || field === 'homeCount') {
     const nw = parseInt(inventoryData[index].newCount) || 0;
     const op = parseInt(inventoryData[index].openedCount) || 0;
+    const hm = parseInt(inventoryData[index].homeCount) || 0;
     
     // Sum is always recalculated (handles 0 and clears residual data)
-    const calculatedTotal = nw + op;
+    const calculatedTotal = nw + op + hm;
     inventoryData[index].totalBottles = calculatedTotal;
     
     // Update total input on screen dynamically based on DOM context (prevents sorting index mismatch!)
@@ -947,6 +964,7 @@ function importJSON(e) {
           totalBottles: importedItem.totalBottles || '',
           newCount: importedItem.newCount || '',
           openedCount: importedItem.openedCount || '',
+          homeCount: importedItem.homeCount || '',
           remarks: importedItem.remarks || ''
         };
       });
@@ -1006,6 +1024,7 @@ function setupEventListeners() {
         totalBottles: '',
         newCount: '',
         openedCount: '',
+        homeCount: '',
         remarks: ''
       });
       applyFilters();

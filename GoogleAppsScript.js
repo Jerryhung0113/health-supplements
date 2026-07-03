@@ -30,10 +30,11 @@ function doPost(e) {
           item.image || '',
           item.name || '',
           item.spec || '',
-          item.openedCount || '',  // Column D: 已開
-          item.newCount || '',     // Column E: 全新
-          item.totalBottles || '', // Column F: 總瓶數
-          item.remarks || ''
+          item.newCount || '',     // Column D: 全新
+          item.openedCount || '',  // Column E: 已開
+          item.homeCount || '',    // Column F: 家裡
+          item.totalBottles || '', // Column G: 總瓶數
+          item.remarks || ''       // Column H: 備註
         ]);
       }
     } else {
@@ -42,10 +43,11 @@ function doPost(e) {
         payload.image || '',
         payload.name || '',
         payload.spec || '',
-        payload.openedCount || '',  // Column D: 已開
-        payload.newCount || '',     // Column E: 全新
-        payload.totalBottles || '', // Column F: 總瓶數
-        payload.remarks || ''
+        payload.newCount || '',     // Column D: 全新
+        payload.openedCount || '',  // Column E: 已開
+        payload.homeCount || '',    // Column F: 家裡
+        payload.totalBottles || '', // Column G: 總瓶數
+        payload.remarks || ''       // Column H: 備註
       ]);
     }
     
@@ -78,10 +80,11 @@ function doGet(e) {
         image: row[0],
         name: row[1],
         spec: row[2],
-        openedCount: row[3], // Column D: 已開
-        newCount: row[4],    // Column E: 全新
-        totalBottles: row[5], // Column F: 總瓶數
-        remarks: row[6]
+        newCount: row[3],     // Column D: 全新
+        openedCount: row[4],  // Column E: 已開
+        homeCount: row[5],    // Column F: 家裡
+        totalBottles: row[6], // Column G: 總瓶數
+        remarks: row[7]       // Column H: 備註
       });
     }
     

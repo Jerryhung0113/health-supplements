@@ -281,6 +281,7 @@ body {
 .icon-purple { background-color: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
 .icon-green { background-color: rgba(16, 185, 129, 0.15); color: #10b981; }
 .icon-orange { background-color: rgba(249, 115, 22, 0.15); color: #f97316; }
+.icon-pink { background-color: rgba(236, 72, 153, 0.15); color: #ec4899; }
 
 .stat-info {
   display: flex;

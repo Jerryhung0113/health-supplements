@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Lucide Icons for premium look -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="style.css?v=2.1">
+  <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body>
   <div class="app-container">
@@ -84,6 +84,16 @@
           <h2 id="statOpenedCount" class="stat-value">0</h2>
         </div>
       </div>
+
+      <div class="stat-card">
+        <div class="stat-icon icon-pink">
+          <i data-lucide="home"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">家裡瓶數</span>
+          <h2 id="statHomeCount" class="stat-value">0</h2>
+        </div>
+      </div>
     </section>
 
     <!-- Toolbar -->
@@ -140,11 +150,14 @@
               <th id="th-spec" class="sortable-header" onclick="handleHeaderClick('spec')" title="點擊依規格排序">
                 品牌與規格 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
               </th>
+              <th id="th-newCount" class="sortable-header text-center" width="80" onclick="handleHeaderClick('newCount')" title="點擊依全新數量排序">
+                全新 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              </th>
               <th id="th-openedCount" class="sortable-header text-center" width="80" onclick="handleHeaderClick('openedCount')" title="點擊依已開數量排序">
                 已開 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
               </th>
-              <th id="th-newCount" class="sortable-header text-center" width="80" onclick="handleHeaderClick('newCount')" title="點擊依全新數量排序">
-                全新 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
+              <th id="th-homeCount" class="sortable-header text-center" width="80" onclick="handleHeaderClick('homeCount')" title="點擊依家裡數量排序">
+                家裡 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
               </th>
               <th id="th-totalBottles" class="sortable-header text-center" width="90" onclick="handleHeaderClick('totalBottles')" title="點擊依總瓶數排序">
                 總瓶數 <span class="sort-icon-placeholder"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-left:4px;"></i></span>
@@ -239,6 +252,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=2.1"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>
