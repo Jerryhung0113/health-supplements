@@ -669,6 +669,7 @@ body {
 }
 
 .inventory-card {
+  position: relative;
   background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -688,20 +689,25 @@ body {
 
 .card-img-wrapper {
   position: relative;
-  width: 100%;
-  height: 200px;
-  background-color: rgba(0, 0, 0, 0.05);
+  width: 100px;
+  height: 100px;
+  margin: 16px auto 0 auto;
+  border-radius: var(--radius-md);
+  background-color: rgba(0, 0, 0, 0.02);
   overflow: hidden;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .card-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 6px;
   transition: transform 0.5s ease;
 }
 
@@ -712,11 +718,10 @@ body {
 .card-img-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 60%);
+  background: rgba(0, 0, 0, 0.25);
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 12px;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -726,14 +731,7 @@ body {
 }
 
 .card-filename {
-  color: #ffffff;
-  font-size: 12px;
-  font-family: 'Outfit', sans-serif;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 70%;
+  display: none;
 }
 
 .btn-card-zoom {
@@ -741,8 +739,8 @@ body {
   color: #1e293b;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -757,10 +755,10 @@ body {
 }
 
 .card-content {
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   flex-grow: 1;
 }
 
@@ -1167,7 +1165,7 @@ body {
 .btn-card-delete {
   position: absolute;
   top: 12px;
-  left: 12px;
+  right: 12px;
   background: rgba(255, 255, 255, 0.9);
   color: #ef4444;
   border: none;

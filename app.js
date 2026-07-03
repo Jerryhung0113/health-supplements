@@ -415,10 +415,10 @@ function renderTable() {
         <input type="text" class="table-input" value="${escapeHtml(item.spec)}" placeholder="品牌/規格/容量..." oninput="updateField(${originalIndex}, 'spec', this.value)">
       </td>
       <td>
-        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+        <input type="number" class="table-input num-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
       </td>
       <td>
-        <input type="number" class="table-input num-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
+        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
       </td>
       <td>
         <input type="number" class="table-input num-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
@@ -450,11 +450,11 @@ function renderGrid() {
     const displayFilename = isBase64 ? '自訂上傳圖片' : item.image;
     
     card.innerHTML = `
+      <button class="btn-card-delete" onclick="event.stopPropagation(); deleteRow(${originalIndex})" title="刪除此品項">
+        <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+      </button>
       <div class="card-img-wrapper" onclick="openLightbox(${originalIndex})">
         <img class="card-img" src="${item.image}" alt="supplement image" onerror="this.src='https://placehold.co/300?text=No+Img'">
-        <button class="btn-card-delete" onclick="event.stopPropagation(); deleteRow(${originalIndex})" title="刪除此品項">
-          <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
-        </button>
         <div class="card-img-overlay">
           <span class="card-filename" title="${displayFilename}">${displayFilename}</span>
           <button class="btn-card-zoom" onclick="event.stopPropagation(); openLightbox(${originalIndex})" title="查看大圖">
@@ -489,16 +489,16 @@ function renderGrid() {
           <div class="card-section-title">庫存數量</div>
           <div class="card-qty-row">
             <div class="card-qty-item">
-              <span>總瓶數</span>
-              <input type="number" class="card-qty-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
+              <span>已開</span>
+              <input type="number" class="card-qty-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
             </div>
             <div class="card-qty-item">
               <span>全新</span>
               <input type="number" class="card-qty-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
             </div>
             <div class="card-qty-item">
-              <span>已開</span>
-              <input type="number" class="card-qty-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
+              <span>總瓶數</span>
+              <input type="number" class="card-qty-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
             </div>
           </div>
         </div>
