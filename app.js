@@ -698,14 +698,9 @@ async function manualSave() {
     }
   }
 
-  // Set disabled state & animation
+  // Set disabled state
   manualSaveBtn.disabled = true;
   saveBtnText.innerText = '儲存中...';
-  
-  const icon = manualSaveBtn.querySelector('svg') || manualSaveBtn.querySelector('i');
-  if (icon) {
-    icon.classList.add('spin');
-  }
   
   try {
     if (googleScriptUrl) {
@@ -739,9 +734,6 @@ async function manualSave() {
     // Restore button state
     manualSaveBtn.disabled = false;
     saveBtnText.innerText = '資料儲存';
-    if (icon) {
-      icon.classList.remove('spin');
-    }
   }
 }
 
