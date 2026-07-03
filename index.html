@@ -103,12 +103,16 @@
 
       <div class="toolbar-right">
         <!-- Save Status indicator -->
-        <div class="save-status" id="saveStatus">
+        <div class="save-status" id="saveStatus" style="display: none;">
           <i data-lucide="check-circle" class="saved-icon"></i>
           <i data-lucide="loader" class="saving-icon spin" style="display: none;"></i>
           <span id="saveStatusText">資料已儲存</span>
         </div>
 
+        <button id="manualSaveBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none;">
+          <i data-lucide="save"></i>
+          <span id="saveBtnText">資料儲存</span>
+        </button>
         <button id="addItemBtn" class="btn btn-primary">
           <i data-lucide="plus-circle"></i>
           <span>新增品項</span>
@@ -235,6 +239,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=1.7"></script>
+  <script src="app.js?v=1.8"></script>
 </body>
 </html>

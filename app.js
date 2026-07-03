@@ -226,6 +226,7 @@ async function loadData() {
 function mapData(array) {
   return array.map(item => ({
     _id: item._id || (_nextId++),
+    isDraft: false,
     image: item.image || 'https://placehold.co/150?text=No+Image',
     name: item.name !== undefined ? item.name : (item.nameA || ''),
     spec: item.spec !== undefined ? item.spec : (item.specA || ''),
@@ -260,9 +261,9 @@ function deduplicateData(arr) {
   });
 }
 
-// Strip internal _id field before comparing or sending to server
+// Strip internal _id and isDraft fields before comparing or sending to server
 function stripId(item) {
-  const { _id, ...rest } = item;
+  const { _id, isDraft, ...rest } = item;
   return rest;
 }
 
@@ -333,68 +334,87 @@ function renderTable() {
     
     const tr = document.createElement('tr');
     
-    // Set row to be draggable
-    tr.draggable = true;
+    // Set row to be draggable only if it is a draft
+    tr.draggable = !!item.isDraft;
     
-    tr.addEventListener('dragstart', (e) => {
-      // If we are currently sorting, reset sorting before dragging
-      if (sortColumn) {
-        sortColumn = '';
-        updateHeaderSortIcons();
-      }
-      tr.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', originalIndex);
-      window.draggedRowOriginalIndex = originalIndex;
-    });
-    
-    tr.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      return false;
-    });
-    
-    tr.addEventListener('dragenter', (e) => {
-      tr.classList.add('drag-over');
-    });
-    
-    tr.addEventListener('dragleave', (e) => {
-      tr.classList.remove('drag-over');
-    });
-    
-    tr.addEventListener('drop', (e) => {
-      e.stopPropagation();
-      tr.classList.remove('drag-over');
-      
-      const sourceIndex = window.draggedRowOriginalIndex;
-      const targetIndex = originalIndex;
-      
-      if (sourceIndex !== undefined && sourceIndex !== null && sourceIndex !== targetIndex) {
-        // Move item in array
-        const movedItem = inventoryData[sourceIndex];
-        inventoryData.splice(sourceIndex, 1);
-        inventoryData.splice(targetIndex, 0, movedItem);
-        
-        applyFilters();
-        triggerAutosave();
-      }
-    });
-    
-    tr.addEventListener('dragend', (e) => {
-      tr.classList.remove('dragging');
-      document.querySelectorAll('.inventory-table tr').forEach(row => {
-        row.classList.remove('drag-over');
+    if (item.isDraft) {
+      tr.addEventListener('dragstart', (e) => {
+        if (sortColumn) {
+          sortColumn = '';
+          updateHeaderSortIcons();
+        }
+        tr.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', originalIndex);
+        window.draggedRowOriginalIndex = originalIndex;
       });
-      window.draggedRowOriginalIndex = null;
-    });
+      
+      tr.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        return false;
+      });
+      
+      tr.addEventListener('dragenter', (e) => {
+        tr.classList.add('drag-over');
+      });
+      
+      tr.addEventListener('dragleave', (e) => {
+        tr.classList.remove('drag-over');
+      });
+      
+      tr.addEventListener('drop', (e) => {
+        e.stopPropagation();
+        tr.classList.remove('drag-over');
+        
+        const sourceIndex = window.draggedRowOriginalIndex;
+        const targetIndex = originalIndex;
+        
+        if (sourceIndex !== undefined && sourceIndex !== null && sourceIndex !== targetIndex) {
+          // Move item in array
+          const movedItem = inventoryData[sourceIndex];
+          inventoryData.splice(sourceIndex, 1);
+          inventoryData.splice(targetIndex, 0, movedItem);
+          
+          applyFilters();
+        }
+      });
+      
+      tr.addEventListener('dragend', (e) => {
+        tr.classList.remove('dragging');
+        document.querySelectorAll('.inventory-table tr').forEach(row => {
+          row.classList.remove('drag-over');
+        });
+        window.draggedRowOriginalIndex = null;
+      });
+    }
+    
+    // Check draft status to disable fields
+    const readonlyAttr = item.isDraft ? '' : 'readonly style="opacity: 0.85; pointer-events: none;"';
+    const cursorStyle = item.isDraft ? '' : 'style="cursor: default;"';
+    
+    // Construct drag handle and delete button html depending on isDraft
+    const dragHandleHtml = item.isDraft 
+      ? `<i data-lucide="grip-vertical" style="color: var(--text-secondary); width: 14px; height: 14px; cursor: grab;"></i>`
+      : `<i data-lucide="lock" style="color: var(--text-secondary); opacity: 0.5; width: 12px; height: 12px;" title="已鎖定資料"></i>`;
+      
+    const deleteBtnHtml = item.isDraft
+      ? `<button class="btn-row-delete" onclick="deleteRow(${originalIndex})" title="刪除此品項" style="padding: 2px;">
+          <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+         </button>`
+      : '';
+      
+    const uploadBtnHtml = item.isDraft
+      ? `<button class="btn-img-upload" onclick="event.stopPropagation(); document.getElementById('file-input-${originalIndex}').click()" title="上傳或更換圖片">
+          <i data-lucide="camera" style="width:11px;height:11px;"></i>
+         </button>`
+      : '';
     
     tr.innerHTML = `
       <td class="text-center drag-handle-cell">
         <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <i data-lucide="grip-vertical" style="color: var(--text-secondary); width: 14px; height: 14px; cursor: grab;"></i>
+          ${dragHandleHtml}
           <span style="font-weight: 600; color: var(--text-secondary); min-width: 14px;">${idx + 1}</span>
-          <button class="btn-row-delete" onclick="deleteRow(${originalIndex})" title="刪除此品項" style="padding: 2px;">
-            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
-          </button>
+          ${deleteBtnHtml}
         </div>
       </td>
       <td class="img-cell text-center">
@@ -403,29 +423,27 @@ function renderTable() {
           <div class="zoom-preview">
             <img src="${item.image}" onerror="this.src='https://placehold.co/300?text=No+Img'">
           </div>
-          <button class="btn-img-upload" onclick="event.stopPropagation(); document.getElementById('file-input-${originalIndex}').click()" title="上傳或更換圖片">
-            <i data-lucide="camera" style="width:11px;height:11px;"></i>
-          </button>
+          ${uploadBtnHtml}
           <input type="file" id="file-input-${originalIndex}" accept="image/*" style="display:none;" onchange="handleImageUpload(${originalIndex}, this.files)">
         </div>
       </td>
       <td>
-        <input type="text" class="table-input" value="${escapeHtml(item.name)}" placeholder="請輸入名稱..." oninput="updateField(${originalIndex}, 'name', this.value)">
+        <input type="text" class="table-input" value="${escapeHtml(item.name)}" placeholder="${item.isDraft ? '請輸入名稱...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'name', this.value)">
       </td>
       <td>
-        <input type="text" class="table-input" value="${escapeHtml(item.spec)}" placeholder="品牌/規格/容量..." oninput="updateField(${originalIndex}, 'spec', this.value)">
+        <input type="text" class="table-input" value="${escapeHtml(item.spec)}" placeholder="${item.isDraft ? '品牌/規格/容量...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'spec', this.value)">
       </td>
       <td>
-        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
       </td>
       <td>
-        <input type="number" class="table-input num-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
+        <input type="number" class="table-input num-input" value="${item.openedCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
       </td>
       <td>
-        <input type="number" class="table-input num-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
+        <input type="number" class="table-input num-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
       </td>
       <td>
-        <input type="text" class="table-input" value="${escapeHtml(item.remarks)}" placeholder="有效期限/購買地點/備註..." oninput="updateField(${originalIndex}, 'remarks', this.value)">
+        <input type="text" class="table-input" value="${escapeHtml(item.remarks)}" placeholder="${item.isDraft ? '有效期限/購買地點/備註...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'remarks', this.value)">
       </td>
     `;
     
@@ -450,12 +468,25 @@ function renderGrid() {
     const isBase64 = item.image.startsWith('data:');
     const displayFilename = isBase64 ? '自訂上傳圖片' : item.image;
     
+    // Check draft status to disable fields
+    const readonlyAttr = item.isDraft ? '' : 'readonly style="opacity: 0.85; pointer-events: none;"';
+    
+    const deleteBtnHtml = item.isDraft
+      ? `<button class="btn-card-delete" onclick="event.stopPropagation(); deleteRow(${originalIndex})" title="刪除此品項">
+          <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+         </button>`
+      : '';
+      
+    const uploadBtnHtml = item.isDraft
+      ? `<button class="btn-img-upload" style="opacity: 1; bottom: 8px; right: 8px;" onclick="event.stopPropagation(); document.getElementById('file-input-grid-${originalIndex}').click()" title="更換圖片">
+          <i data-lucide="camera" style="width:11px;height:11px;"></i>
+         </button>`
+      : '';
+    
     card.innerHTML = `
       <div class="card-img-wrapper" onclick="openLightbox(${originalIndex})">
         <img class="card-img" src="${item.image}" alt="supplement image" onerror="this.src='https://placehold.co/300?text=No+Img'">
-        <button class="btn-card-delete" onclick="event.stopPropagation(); deleteRow(${originalIndex})" title="刪除此品項">
-          <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
-        </button>
+        ${deleteBtnHtml}
         <div class="card-img-overlay">
           <span class="card-filename" title="${displayFilename}">${displayFilename}</span>
           <button class="btn-card-zoom" onclick="event.stopPropagation(); openLightbox(${originalIndex})" title="查看大圖">
@@ -463,9 +494,7 @@ function renderGrid() {
           </button>
         </div>
         <!-- Image uploader overlay on card -->
-        <button class="btn-img-upload" style="opacity: 1; bottom: 8px; right: 8px;" onclick="event.stopPropagation(); document.getElementById('file-input-grid-${originalIndex}').click()" title="更換圖片">
-          <i data-lucide="camera" style="width:11px;height:11px;"></i>
-        </button>
+        ${uploadBtnHtml}
         <input type="file" id="file-input-grid-${originalIndex}" accept="image/*" style="display:none;" onchange="handleImageUpload(${originalIndex}, this.files)">
       </div>
       
@@ -476,11 +505,11 @@ function renderGrid() {
           <div class="card-field-row">
             <div class="card-input-group">
               <label>名稱</label>
-              <input type="text" class="card-input" value="${escapeHtml(item.name)}" placeholder="請輸入名稱..." oninput="updateField(${originalIndex}, 'name', this.value)">
+              <input type="text" class="card-input" value="${escapeHtml(item.name)}" placeholder="${item.isDraft ? '請輸入名稱...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'name', this.value)">
             </div>
             <div class="card-input-group">
               <label>品牌與規格</label>
-              <input type="text" class="card-input" value="${escapeHtml(item.spec)}" placeholder="品牌/規格/容量..." oninput="updateField(${originalIndex}, 'spec', this.value)">
+              <input type="text" class="card-input" value="${escapeHtml(item.spec)}" placeholder="${item.isDraft ? '品牌/規格/容量...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'spec', this.value)">
             </div>
           </div>
         </div>
@@ -491,15 +520,15 @@ function renderGrid() {
           <div class="card-qty-row">
             <div class="card-qty-item">
               <span>總瓶數</span>
-              <input type="number" class="card-qty-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
+              <input type="number" class="card-qty-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
             </div>
             <div class="card-qty-item">
               <span>全新</span>
-              <input type="number" class="card-qty-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+              <input type="number" class="card-qty-input" value="${item.newCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
             </div>
             <div class="card-qty-item">
               <span>已開</span>
-              <input type="number" class="card-qty-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
+              <input type="number" class="card-qty-input" value="${item.openedCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
             </div>
           </div>
         </div>
@@ -507,7 +536,7 @@ function renderGrid() {
         <!-- Section D (Remarks) -->
         <div class="card-input-group">
           <label>備註資訊</label>
-          <input type="text" class="card-input" value="${escapeHtml(item.remarks)}" placeholder="保存期限、購買來源等說明..." oninput="updateField(${originalIndex}, 'remarks', this.value)">
+          <input type="text" class="card-input" value="${escapeHtml(item.remarks)}" placeholder="${item.isDraft ? '保存期限、購買來源等說明...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'remarks', this.value)">
         </div>
       </div>
     `;
@@ -584,7 +613,6 @@ function updateField(index, field, value, el) {
   }
   
   updateStatistics();
-  triggerAutosave();
 }
 
 // Delete item row
@@ -592,7 +620,6 @@ function deleteRow(index) {
   if (confirm('確定要刪除此品項嗎？')) {
     inventoryData.splice(index, 1);
     applyFilters();
-    triggerAutosave();
   }
 }
 
@@ -600,8 +627,6 @@ function deleteRow(index) {
 function handleImageUpload(index, files) {
   const file = files[0];
   if (!file) return;
-  
-  setSaveStatus('saving');
   
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -638,86 +663,85 @@ function handleImageUpload(index, files) {
       inventoryData[index].image = compressedBase64;
       
       applyFilters();
-      triggerAutosave();
     };
     img.onerror = function() {
       alert('圖片載入失敗，請換一張試試！');
-      setSaveStatus('error', '載入失敗');
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-function triggerAutosave() {
-  if (initialLoad) {
-    console.log('Autosave skipped: initial data loading.');
-    return;
-  }
-
-  // Skip save if data has not changed since last successful save
-  const currentSnapshot = JSON.stringify(inventoryData.map(stripId));
-  if (currentSnapshot === lastSavedSnapshot) {
-    console.log('Autosave skipped: data unchanged since last save.');
-    return;
-  }
-
-  setSaveStatus('saving');
-  if (saveTimeout) clearTimeout(saveTimeout);
+async function manualSave() {
+  const manualSaveBtn = document.getElementById('manualSaveBtn');
+  const saveBtnText = document.getElementById('saveBtnText');
   
-  saveTimeout = setTimeout(async () => {
-    try {
-      // 1. If Google Script URL is configured, push to Google Sheets
-      if (googleScriptUrl) {
-        const dataToSend = inventoryData.map(stripId); // Never send internal _id to server
-        const response = await fetch(googleScriptUrl, {
-          method: 'POST',
-          mode: 'cors',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8' // avoids preflight OPTIONS CORS block
-          },
-          body: JSON.stringify(dataToSend)
-        });
-        const res = await response.json();
-        if (res && res.success) {
-          // Update snapshot so we don't re-save the same data again
-          lastSavedSnapshot = JSON.stringify(dataToSend);
-          setSaveStatus('saved', '雲端同步成功');
-        } else {
-          throw new Error((res && res.error) || 'Google Sheet save failed');
-        }
-        return;
-      }
-
-      // 2. Otherwise save locally via python API or LocalStorage
-      if (standaloneMode) {
-        localStorage.setItem('supplement_inventory_data', JSON.stringify(inventoryData));
-        setSaveStatus('saved');
-      } else {
-        const response = await fetch('/api/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(inventoryData)
-        });
-        const res = await response.json();
-        if (res.success) {
-          setSaveStatus('saved');
-        } else {
-          throw new Error(res.message || 'API failed');
-        }
-      }
-    } catch (e) {
-      console.error('Error saving data:', e);
-      setSaveStatus('error', '儲存失敗');
-      // IMPORTANT: Only fall back to localStorage when NOT using Google Sheets.
-      if (!googleScriptUrl) {
-        localStorage.setItem('supplement_inventory_data', JSON.stringify(inventoryData));
-      }
+  if (!manualSaveBtn) return;
+  
+  // Filter new items (drafts)
+  const drafts = inventoryData.filter(item => item.isDraft);
+  if (drafts.length === 0) {
+    alert('沒有需要儲存的新增資料！請先點擊「新增品項」並填寫資料。');
+    return;
+  }
+  
+  // Basic validation to make sure drafts aren't completely empty
+  const hasEmptyDraft = drafts.some(item => !item.name.trim());
+  if (hasEmptyDraft) {
+    if (!confirm('部分新增品項的「名稱」是空的，確定要儲存嗎？')) {
+      return;
     }
-  }, 1000);
+  }
+
+  // Set disabled state & animation
+  manualSaveBtn.disabled = true;
+  saveBtnText.innerText = '儲存中...';
+  
+  const icon = manualSaveBtn.querySelector('svg') || manualSaveBtn.querySelector('i');
+  if (icon) {
+    icon.classList.add('spin');
+  }
+  
+  try {
+    if (googleScriptUrl) {
+      const dataToSend = drafts.map(stripId); // Strip _id and isDraft
+      console.log('Sending drafts to GSheets:', dataToSend);
+      
+      const response = await fetch(googleScriptUrl, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(dataToSend)
+      });
+      
+      const res = await response.json();
+      if (res && res.success) {
+        alert('資料已成功儲存至 Google 試算表！');
+        // Clear inputs: remove drafts locally so they disappear
+        inventoryData = inventoryData.filter(item => !item.isDraft);
+        // Reload all data from Google Sheet to get the fresh view with the newly appended items
+        await loadData();
+      } else {
+        throw new Error((res && res.error) || '伺服器寫入失敗');
+      }
+    } else {
+      alert('請先在右側「雲端設定」中貼上您的 Google Apps Script Web App 網址以進行同步。');
+    }
+  } catch (err) {
+    console.error('Error in manualSave:', err);
+    alert(`儲存失敗！\n錯誤原因：${err.message || err}`);
+  } finally {
+    // Restore button state
+    manualSaveBtn.disabled = false;
+    saveBtnText.innerText = '資料儲存';
+    if (icon) {
+      icon.classList.remove('spin');
+    }
+  }
 }
+
 
 function setSaveStatus(status, customText = '') {
   if (status === 'saving') {
@@ -950,6 +974,8 @@ function importJSON(e) {
       
       inventoryData = data.map(importedItem => {
         return {
+          _id: _nextId++,
+          isDraft: true, // Imported backup items can be reviewed and manually saved
           image: importedItem.image,
           name: importedItem.name || '',
           spec: importedItem.spec || '',
@@ -961,8 +987,7 @@ function importJSON(e) {
       });
       
       applyFilters();
-      triggerAutosave();
-      alert('備份資料匯入成功！已同步至儲存庫。');
+      alert('備份資料已載入為草稿！請點擊「資料儲存」以寫入雲端。');
     } catch (err) {
       alert(`匯入失敗: ${err.message}`);
     }
@@ -1010,6 +1035,7 @@ function setupEventListeners() {
     addItemBtn.addEventListener('click', () => {
       inventoryData.push({
         _id: _nextId++, // Unique ID prevents index collision
+        isDraft: true, // Mark as draft
         image: 'https://placehold.co/150?text=No+Image', // Default placeholder
         name: '',
         spec: '',
@@ -1022,14 +1048,21 @@ function setupEventListeners() {
       
       // Scroll smoothly to bottom
       setTimeout(() => {
-        window.scrollTo({
-          top: document.body.scrollHeight,
-          behavior: 'smooth'
-        });
+        const viewEl = document.querySelector('.view-container:not([style*="display: none"])');
+        if (viewEl) {
+          viewEl.scrollTo({
+            top: viewEl.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
       }, 100);
-      
-      triggerAutosave();
     });
+  }
+
+  // Manual save listener
+  const manualSaveBtn = document.getElementById('manualSaveBtn');
+  if (manualSaveBtn) {
+    manualSaveBtn.addEventListener('click', manualSave);
   }
 
   // Cloud settings modal elements
