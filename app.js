@@ -334,87 +334,66 @@ function renderTable() {
     
     const tr = document.createElement('tr');
     
-    // Set row to be draggable only if it is a draft
-    tr.draggable = !!item.isDraft;
+    // Set row to be draggable
+    tr.draggable = true;
     
-    if (item.isDraft) {
-      tr.addEventListener('dragstart', (e) => {
-        if (sortColumn) {
-          sortColumn = '';
-          updateHeaderSortIcons();
-        }
-        tr.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', originalIndex);
-        window.draggedRowOriginalIndex = originalIndex;
-      });
+    tr.addEventListener('dragstart', (e) => {
+      if (sortColumn) {
+        sortColumn = '';
+        updateHeaderSortIcons();
+      }
+      tr.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', originalIndex);
+      window.draggedRowOriginalIndex = originalIndex;
+    });
+    
+    tr.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      return false;
+    });
+    
+    tr.addEventListener('dragenter', (e) => {
+      tr.classList.add('drag-over');
+    });
+    
+    tr.addEventListener('dragleave', (e) => {
+      tr.classList.remove('drag-over');
+    });
+    
+    tr.addEventListener('drop', (e) => {
+      e.stopPropagation();
+      tr.classList.remove('drag-over');
       
-      tr.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        return false;
-      });
+      const sourceIndex = window.draggedRowOriginalIndex;
+      const targetIndex = originalIndex;
       
-      tr.addEventListener('dragenter', (e) => {
-        tr.classList.add('drag-over');
-      });
-      
-      tr.addEventListener('dragleave', (e) => {
-        tr.classList.remove('drag-over');
-      });
-      
-      tr.addEventListener('drop', (e) => {
-        e.stopPropagation();
-        tr.classList.remove('drag-over');
+      if (sourceIndex !== undefined && sourceIndex !== null && sourceIndex !== targetIndex) {
+        // Move item in array
+        const movedItem = inventoryData[sourceIndex];
+        inventoryData.splice(sourceIndex, 1);
+        inventoryData.splice(targetIndex, 0, movedItem);
         
-        const sourceIndex = window.draggedRowOriginalIndex;
-        const targetIndex = originalIndex;
-        
-        if (sourceIndex !== undefined && sourceIndex !== null && sourceIndex !== targetIndex) {
-          // Move item in array
-          const movedItem = inventoryData[sourceIndex];
-          inventoryData.splice(sourceIndex, 1);
-          inventoryData.splice(targetIndex, 0, movedItem);
-          
-          applyFilters();
-        }
-      });
-      
-      tr.addEventListener('dragend', (e) => {
-        tr.classList.remove('dragging');
-        document.querySelectorAll('.inventory-table tr').forEach(row => {
-          row.classList.remove('drag-over');
-        });
-        window.draggedRowOriginalIndex = null;
-      });
-    }
+        applyFilters();
+      }
+    });
     
-    // Check draft status to disable fields
-    const readonlyAttr = item.isDraft ? '' : 'readonly style="opacity: 0.85; pointer-events: none;"';
-    const cursorStyle = item.isDraft ? '' : 'style="cursor: default;"';
-    
-    // Construct drag handle and delete button html depending on isDraft
-    const dragHandleHtml = item.isDraft 
-      ? `<i data-lucide="grip-vertical" style="color: var(--text-secondary); width: 14px; height: 14px; cursor: grab;"></i>`
-      : `<i data-lucide="lock" style="color: var(--text-secondary); opacity: 0.5; width: 12px; height: 12px;" title="已鎖定資料"></i>`;
-      
-    const deleteBtnHtml = item.isDraft
-      ? `<button class="btn-row-delete" onclick="deleteRow(${originalIndex})" title="刪除此品項" style="padding: 2px;">
-          <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
-         </button>`
-      : '';
-      
-    const uploadBtnHtml = item.isDraft
-      ? `<button class="btn-img-upload" onclick="event.stopPropagation(); document.getElementById('file-input-${originalIndex}').click()" title="上傳或更換圖片">
-          <i data-lucide="camera" style="width:11px;height:11px;"></i>
-         </button>`
-      : '';
+    tr.addEventListener('dragend', (e) => {
+      tr.classList.remove('dragging');
+      document.querySelectorAll('.inventory-table tr').forEach(row => {
+        row.classList.remove('drag-over');
+      });
+      window.draggedRowOriginalIndex = null;
+    });
     
     tr.innerHTML = `
       <td class="text-center drag-handle-cell">
         <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-          ${dragHandleHtml}
+          <i data-lucide="grip-vertical" style="color: var(--text-secondary); width: 14px; height: 14px; cursor: grab;"></i>
           <span style="font-weight: 600; color: var(--text-secondary); min-width: 14px;">${idx + 1}</span>
-          ${deleteBtnHtml}
+          <button class="btn-row-delete" onclick="deleteRow(${originalIndex})" title="刪除此品項" style="padding: 2px;">
+            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+          </button>
         </div>
       </td>
       <td class="img-cell text-center">
@@ -423,27 +402,29 @@ function renderTable() {
           <div class="zoom-preview">
             <img src="${item.image}" onerror="this.src='https://placehold.co/300?text=No+Img'">
           </div>
-          ${uploadBtnHtml}
+          <button class="btn-img-upload" onclick="event.stopPropagation(); document.getElementById('file-input-${originalIndex}').click()" title="上傳或更換圖片">
+            <i data-lucide="camera" style="width:11px;height:11px;"></i>
+          </button>
           <input type="file" id="file-input-${originalIndex}" accept="image/*" style="display:none;" onchange="handleImageUpload(${originalIndex}, this.files)">
         </div>
       </td>
       <td>
-        <input type="text" class="table-input" value="${escapeHtml(item.name)}" placeholder="${item.isDraft ? '請輸入名稱...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'name', this.value)">
+        <input type="text" class="table-input" value="${escapeHtml(item.name)}" placeholder="請輸入名稱..." oninput="updateField(${originalIndex}, 'name', this.value)">
       </td>
       <td>
-        <input type="text" class="table-input" value="${escapeHtml(item.spec)}" placeholder="${item.isDraft ? '品牌/規格/容量...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'spec', this.value)">
+        <input type="text" class="table-input" value="${escapeHtml(item.spec)}" placeholder="品牌/規格/容量..." oninput="updateField(${originalIndex}, 'spec', this.value)">
       </td>
       <td>
-        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+        <input type="number" class="table-input num-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
       </td>
       <td>
-        <input type="number" class="table-input num-input" value="${item.openedCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
+        <input type="number" class="table-input num-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
       </td>
       <td>
-        <input type="number" class="table-input num-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
+        <input type="number" class="table-input num-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
       </td>
       <td>
-        <input type="text" class="table-input" value="${escapeHtml(item.remarks)}" placeholder="${item.isDraft ? '有效期限/購買地點/備註...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'remarks', this.value)">
+        <input type="text" class="table-input" value="${escapeHtml(item.remarks)}" placeholder="有效期限/購買地點/備註..." oninput="updateField(${originalIndex}, 'remarks', this.value)">
       </td>
     `;
     
@@ -468,25 +449,12 @@ function renderGrid() {
     const isBase64 = item.image.startsWith('data:');
     const displayFilename = isBase64 ? '自訂上傳圖片' : item.image;
     
-    // Check draft status to disable fields
-    const readonlyAttr = item.isDraft ? '' : 'readonly style="opacity: 0.85; pointer-events: none;"';
-    
-    const deleteBtnHtml = item.isDraft
-      ? `<button class="btn-card-delete" onclick="event.stopPropagation(); deleteRow(${originalIndex})" title="刪除此品項">
-          <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
-         </button>`
-      : '';
-      
-    const uploadBtnHtml = item.isDraft
-      ? `<button class="btn-img-upload" style="opacity: 1; bottom: 8px; right: 8px;" onclick="event.stopPropagation(); document.getElementById('file-input-grid-${originalIndex}').click()" title="更換圖片">
-          <i data-lucide="camera" style="width:11px;height:11px;"></i>
-         </button>`
-      : '';
-    
     card.innerHTML = `
       <div class="card-img-wrapper" onclick="openLightbox(${originalIndex})">
         <img class="card-img" src="${item.image}" alt="supplement image" onerror="this.src='https://placehold.co/300?text=No+Img'">
-        ${deleteBtnHtml}
+        <button class="btn-card-delete" onclick="event.stopPropagation(); deleteRow(${originalIndex})" title="刪除此品項">
+          <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+        </button>
         <div class="card-img-overlay">
           <span class="card-filename" title="${displayFilename}">${displayFilename}</span>
           <button class="btn-card-zoom" onclick="event.stopPropagation(); openLightbox(${originalIndex})" title="查看大圖">
@@ -494,7 +462,9 @@ function renderGrid() {
           </button>
         </div>
         <!-- Image uploader overlay on card -->
-        ${uploadBtnHtml}
+        <button class="btn-img-upload" style="opacity: 1; bottom: 8px; right: 8px;" onclick="event.stopPropagation(); document.getElementById('file-input-grid-${originalIndex}').click()" title="更換圖片">
+          <i data-lucide="camera" style="width:11px;height:11px;"></i>
+        </button>
         <input type="file" id="file-input-grid-${originalIndex}" accept="image/*" style="display:none;" onchange="handleImageUpload(${originalIndex}, this.files)">
       </div>
       
@@ -505,11 +475,11 @@ function renderGrid() {
           <div class="card-field-row">
             <div class="card-input-group">
               <label>名稱</label>
-              <input type="text" class="card-input" value="${escapeHtml(item.name)}" placeholder="${item.isDraft ? '請輸入名稱...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'name', this.value)">
+              <input type="text" class="card-input" value="${escapeHtml(item.name)}" placeholder="請輸入名稱..." oninput="updateField(${originalIndex}, 'name', this.value)">
             </div>
             <div class="card-input-group">
               <label>品牌與規格</label>
-              <input type="text" class="card-input" value="${escapeHtml(item.spec)}" placeholder="${item.isDraft ? '品牌/規格/容量...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'spec', this.value)">
+              <input type="text" class="card-input" value="${escapeHtml(item.spec)}" placeholder="品牌/規格/容量..." oninput="updateField(${originalIndex}, 'spec', this.value)">
             </div>
           </div>
         </div>
@@ -520,15 +490,15 @@ function renderGrid() {
           <div class="card-qty-row">
             <div class="card-qty-item">
               <span>總瓶數</span>
-              <input type="number" class="card-qty-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
+              <input type="number" class="card-qty-input total-bottles-input" value="${item.totalBottles}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'totalBottles', this.value, this)">
             </div>
             <div class="card-qty-item">
               <span>全新</span>
-              <input type="number" class="card-qty-input" value="${item.newCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
+              <input type="number" class="card-qty-input" value="${item.newCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'newCount', this.value, this)">
             </div>
             <div class="card-qty-item">
               <span>已開</span>
-              <input type="number" class="card-qty-input" value="${item.openedCount}" placeholder="0" min="0" ${readonlyAttr} oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
+              <input type="number" class="card-qty-input" value="${item.openedCount}" placeholder="0" min="0" oninput="updateField(${originalIndex}, 'openedCount', this.value, this)">
             </div>
           </div>
         </div>
@@ -536,7 +506,7 @@ function renderGrid() {
         <!-- Section D (Remarks) -->
         <div class="card-input-group">
           <label>備註資訊</label>
-          <input type="text" class="card-input" value="${escapeHtml(item.remarks)}" placeholder="${item.isDraft ? '保存期限、購買來源等說明...' : ''}" ${readonlyAttr} oninput="updateField(${originalIndex}, 'remarks', this.value)">
+          <input type="text" class="card-input" value="${escapeHtml(item.remarks)}" placeholder="保存期限、購買來源等說明..." oninput="updateField(${originalIndex}, 'remarks', this.value)">
         </div>
       </div>
     `;
@@ -678,17 +648,15 @@ async function manualSave() {
   
   if (!manualSaveBtn) return;
   
-  // Filter new items (drafts)
-  const drafts = inventoryData.filter(item => item.isDraft);
-  if (drafts.length === 0) {
-    alert('沒有需要儲存的新增資料！請先點擊「新增品項」並填寫資料。');
+  if (inventoryData.length === 0) {
+    alert('庫存表是空的，沒有資料需要儲存！');
     return;
   }
   
-  // Basic validation to make sure drafts aren't completely empty
-  const hasEmptyDraft = drafts.some(item => !item.name.trim());
-  if (hasEmptyDraft) {
-    if (!confirm('部分新增品項的「名稱」是空的，確定要儲存嗎？')) {
+  // Basic validation to make sure items aren't completely empty
+  const hasEmptyItem = inventoryData.some(item => !item.name.trim());
+  if (hasEmptyItem) {
+    if (!confirm('部分品項的「名稱」是空的，確定要儲存嗎？')) {
       return;
     }
   }
@@ -704,8 +672,8 @@ async function manualSave() {
   
   try {
     if (googleScriptUrl) {
-      const dataToSend = drafts.map(stripId); // Strip _id and isDraft
-      console.log('Sending drafts to GSheets:', dataToSend);
+      const dataToSend = inventoryData.map(stripId); // Strip _id and isDraft
+      console.log('Sending all data to GSheets:', dataToSend);
       
       const response = await fetch(googleScriptUrl, {
         method: 'POST',
@@ -719,9 +687,7 @@ async function manualSave() {
       const res = await response.json();
       if (res && res.success) {
         alert('資料已成功儲存至 Google 試算表！');
-        // Clear inputs: remove drafts locally so they disappear
-        inventoryData = inventoryData.filter(item => !item.isDraft);
-        // Reload all data from Google Sheet to get the fresh view with the newly appended items
+        // Do NOT clear data, just reload to make sure we are in sync with cloud
         await loadData();
       } else {
         throw new Error((res && res.error) || '伺服器寫入失敗');
@@ -975,7 +941,6 @@ function importJSON(e) {
       inventoryData = data.map(importedItem => {
         return {
           _id: _nextId++,
-          isDraft: true, // Imported backup items can be reviewed and manually saved
           image: importedItem.image,
           name: importedItem.name || '',
           spec: importedItem.spec || '',
@@ -987,7 +952,7 @@ function importJSON(e) {
       });
       
       applyFilters();
-      alert('備份資料已載入為草稿！請點擊「資料儲存」以寫入雲端。');
+      alert('備份資料已載入！請點擊「資料儲存」以寫入雲端。');
     } catch (err) {
       alert(`匯入失敗: ${err.message}`);
     }
@@ -1035,7 +1000,6 @@ function setupEventListeners() {
     addItemBtn.addEventListener('click', () => {
       inventoryData.push({
         _id: _nextId++, // Unique ID prevents index collision
-        isDraft: true, // Mark as draft
         image: 'https://placehold.co/150?text=No+Image', // Default placeholder
         name: '',
         spec: '',

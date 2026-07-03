@@ -15,7 +15,13 @@ function doPost(e) {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var payload = JSON.parse(e.postData.contents);
     
-    // 2. 解析前端傳送過來的資料並寫入試算表
+    // 清空舊有資料列（保留第一行標題）
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.deleteRows(2, lastRow - 1);
+    }
+    
+    // 2. 解析前端傳送過來的完整資料並寫入試算表
     if (Array.isArray(payload)) {
       for (var i = 0; i < payload.length; i++) {
         var item = payload[i];
