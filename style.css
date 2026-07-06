@@ -1086,28 +1086,106 @@ body {
 /* ==========================================================================
    Responsive Adaptations
    ========================================================================== */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
+  /* 1. Body & Container: Disable locked viewport height, allow natural scroll */
+  body {
+    height: auto !important;
+    overflow: auto !important;
+  }
+  .app-container {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+  .content-container {
+    flex: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .view-container {
+    flex: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .view-container.table-wrapper {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+
+  /* 2. Header & Actions: Stack vertically */
   .app-header {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
   }
   .header-actions {
-    flex-direction: row;
-    width: 100%;
+    flex-direction: row !important;
+    width: 100% !important;
   }
   .search-box {
-    flex-grow: 1;
-    width: auto;
+    flex-grow: 1 !important;
+    width: auto !important;
   }
-  .search-box input:focus {
-    width: 100%;
+
+  /* 3. Stat Dashboard: Horizontal scroll to save space */
+  .stat-dashboard {
+    display: flex !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 10px !important;
+    padding-bottom: 6px !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
   }
+  .stat-dashboard::-webkit-scrollbar {
+    height: 4px;
+  }
+  .stat-dashboard::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+  }
+  .stat-card {
+    flex: 0 0 150px !important;
+    scroll-snap-align: start !important;
+    padding: 8px 12px !important;
+  }
+
+  /* 4. Toolbar & Controls: Stack and justify buttons side-by-side */
   .toolbar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
   }
   .toolbar-left, .toolbar-right {
-    justify-content: space-between;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+  .toolbar-left {
+    justify-content: center !important;
+  }
+  .toolbar-right button {
+    flex: 1 1 45% !important;
+    justify-content: center !important;
+  }
+  #saveStatus {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* 5. Card Grid: Single column for mobile */
+  .card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .card-img-wrapper {
+    width: 220px !important;
+    height: 220px !important;
   }
 }
 

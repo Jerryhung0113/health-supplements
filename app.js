@@ -6,7 +6,7 @@
 let inventoryData = [];
 let _nextId = 1; // Unique ID counter for each item
 let filteredData = [];
-let currentView = 'table'; // 'table' or 'grid'
+let currentView = window.innerWidth <= 768 ? 'grid' : 'table'; // 'table' or 'grid'
 let standaloneMode = false;
 let saveTimeout = null;
 let currentLightboxIndex = -1;
@@ -1019,6 +1019,14 @@ function setupEventListeners() {
         tableView.scrollTop += speed;
       }
     });
+  }
+
+  if (currentView === 'grid') {
+    viewGridBtn.classList.add('active');
+    viewTableBtn.classList.remove('active');
+  } else {
+    viewTableBtn.classList.add('active');
+    viewGridBtn.classList.remove('active');
   }
 
   searchInput.addEventListener('input', applyFilters);
